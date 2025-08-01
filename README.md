@@ -84,8 +84,10 @@ gen-dealflow-dash/
 
 ### Frontend Setup
 ```bash
-cd frontend
+# Install dependencies
 npm install
+
+# Start development server
 npm run dev
 ```
 Frontend will be available at `http://localhost:5173`
@@ -98,6 +100,27 @@ cp env.example .env
 # Edit .env with your configuration
 npm run dev
 ```
+
+## Deployment
+
+### Netlify Deployment (Frontend)
+
+This project is configured for easy deployment to Netlify. See the [Deployment Guide](DEPLOYMENT.md) for detailed instructions.
+
+**Quick Deployment Steps:**
+1. Push your code to a Git repository
+2. Connect your repository to Netlify
+3. Build command: `npm run build`
+4. Publish directory: `dist`
+5. Deploy!
+
+**Pre-configured for:**
+- ✅ SPA routing with React Router
+- ✅ Security headers and caching
+- ✅ Code splitting and optimization
+- ✅ Environment variable support
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md) and [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
 Backend API will be available at `http://localhost:5000`
 
 ## Development

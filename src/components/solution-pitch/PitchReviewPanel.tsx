@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, XCircle, MessageSquare, Eye, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SolutionPitch, fetchSolutionPitches } from '@/lib/mockData';
+import { PitchDetailModal } from '@/components/pitch/PitchDetailModal';
 
 export const PitchReviewPanel = () => {
   const [pitches, setPitches] = useState<SolutionPitch[]>([]);
@@ -16,6 +17,7 @@ export const PitchReviewPanel = () => {
   const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,6 +104,11 @@ export const PitchReviewPanel = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewDetails = (pitch: SolutionPitch) => {
+    setSelectedPitch(pitch);
+    setShowDetailModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -191,38 +198,14 @@ export const PitchReviewPanel = () => {
                     {pitch.content}
                   </p>
                   <div className="flex gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-3 w-3" />
-                          View Details
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-3xl">
-                        <DialogHeader>
-                          <DialogTitle>{pitch.title}</DialogTitle>
-                          <DialogDescription>
-                            Solution pitch for review
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-medium mb-2">Pitch Content</h4>
-                            <div className="p-4 bg-muted rounded-lg">
-                              <p className="text-sm whitespace-pre-wrap">{pitch.content}</p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <strong>Created by:</strong> {pitch.createdBy}
-                            </div>
-                            <div>
-                              <strong>Created:</strong> {pitch.createdAt}
-                            </div>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(pitch)}
+                    >
+                      <Eye className="mr-2 h-3 w-3" />
+                      View Details
+                    </Button>
 
                     <Dialog open={reviewDialogOpen && selectedPitch?.id === pitch.id} onOpenChange={(open) => {
                       setReviewDialogOpen(open);
@@ -320,6 +303,13 @@ export const PitchReviewPanel = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Pitch Detail Modal */}
+      <PitchDetailModal
+        pitch={selectedPitch}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+      />
     </div>
   );
 };

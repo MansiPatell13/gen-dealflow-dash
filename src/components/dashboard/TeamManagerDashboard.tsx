@@ -5,12 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target, BarChart3, UserCheck } from 'lucide-react';
+import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target, BarChart3, UserCheck, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AssignmentPanel } from '@/components/assignment/AssignmentPanel';
 import { CaseStudyManager } from '@/components/case-studies/CaseStudyManager';
 import { PitchReviewPanel } from '@/components/solution-pitch/PitchReviewPanel';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { ProposalViewModal } from '@/components/proposals/ProposalViewModal';
 
 interface TeamManagerDashboardProps {
   user: User;
@@ -21,6 +22,8 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [pitches, setPitches] = useState<SolutionPitch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProposal, setSelectedProposal] = useState<ProjectBrief | null>(null);
+  const [showProposalModal, setShowProposalModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,6 +49,23 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleViewProposal = (proposal: ProjectBrief) => {
+    setSelectedProposal(proposal);
+    setShowProposalModal(true);
+  };
+
+  const handleApproveProposal = (proposalId: string) => {
+    setProjects(prev => 
+      prev.map(p => p.id === proposalId ? { ...p, status: 'approved' as const } : p)
+    );
+  };
+
+  const handleRejectProposal = (proposalId: string) => {
+    setProjects(prev => 
+      prev.map(p => p.id === proposalId ? { ...p, status: 'submitted' as const } : p)
+    );
   };
 
   const getStatusIcon = (status: string) => {
@@ -196,7 +216,14 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
                         <Button variant="outline" size="sm">
                           {project.assignedTo ? 'Reassign' : 'Assign'}
                         </Button>
-                        <Button variant="outline" size="sm">View Details</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewProposal(project)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
@@ -238,6 +265,16 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
           <AnalyticsDashboard />
         </TabsContent>
       </Tabs>
+      
+      {/* Proposal View Modal */}
+      <ProposalViewModal
+        proposal={selectedProposal}
+        isOpen={showProposalModal}
+        onClose={() => setShowProposalModal(false)}
+        onApprove={handleApproveProposal}
+        onReject={handleRejectProposal}
+        showActions={true}
+      />
     </div>
   );
 };

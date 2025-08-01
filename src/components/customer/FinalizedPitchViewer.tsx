@@ -6,6 +6,9 @@ import { SolutionPitch, fetchSolutionPitches } from '@/lib/mockData';
 import { User } from '@/lib/auth';
 import { CheckCircle, FileText, Download, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PitchDetailModal } from '@/components/pitch/PitchDetailModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { MeetingRequestModal } from '@/components/meeting/MeetingRequestModal';
 
 interface FinalizedPitchViewerProps {
   user: User;
@@ -14,6 +17,10 @@ interface FinalizedPitchViewerProps {
 export const FinalizedPitchViewer = ({ user }: FinalizedPitchViewerProps) => {
   const [finalizedPitches, setFinalizedPitches] = useState<SolutionPitch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPitch, setSelectedPitch] = useState<SolutionPitch | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,6 +51,29 @@ export const FinalizedPitchViewer = ({ user }: FinalizedPitchViewerProps) => {
       title: "Download started",
       description: "Your solution pitch document is being prepared for download",
     });
+  };
+
+  const handleViewDetails = (pitch: SolutionPitch) => {
+    setSelectedPitch(pitch);
+    setShowDetailModal(true);
+  };
+
+  const handleProvideFeedback = (pitchId: string) => {
+    const pitch = finalizedPitches.find(p => p.id === pitchId);
+    if (pitch) {
+      setSelectedPitch(pitch);
+      setShowDetailModal(false);
+      setShowFeedbackModal(true);
+    }
+  };
+
+  const handleRequestMeeting = (pitchId: string) => {
+    const pitch = finalizedPitches.find(p => p.id === pitchId);
+    if (pitch) {
+      setSelectedPitch(pitch);
+      setShowDetailModal(false);
+      setShowMeetingModal(true);
+    }
   };
 
   if (isLoading) {
@@ -122,13 +152,25 @@ export const FinalizedPitchViewer = ({ user }: FinalizedPitchViewerProps) => {
                   )}
 
                   <div className="flex gap-2 pt-4 border-t border-border">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(pitch)}
+                    >
                       View Details
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleProvideFeedback(pitch.id)}
+                    >
                       Provide Feedback
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleRequestMeeting(pitch.id)}
+                    >
                       Request Meeting
                     </Button>
                   </div>
@@ -138,6 +180,29 @@ export const FinalizedPitchViewer = ({ user }: FinalizedPitchViewerProps) => {
           </div>
         )}
       </CardContent>
+      
+      {/* Modals */}
+      <PitchDetailModal
+        pitch={selectedPitch}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        onProvideFeedback={handleProvideFeedback}
+        onRequestMeeting={handleRequestMeeting}
+      />
+      
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        pitchId={selectedPitch?.id || ''}
+        pitchTitle={selectedPitch?.title || ''}
+      />
+      
+      <MeetingRequestModal
+        isOpen={showMeetingModal}
+        onClose={() => setShowMeetingModal(false)}
+        pitchId={selectedPitch?.id || ''}
+        pitchTitle={selectedPitch?.title || ''}
+      />
     </Card>
   );
 };

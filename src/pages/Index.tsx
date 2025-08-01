@@ -1,14 +1,55 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { Landing } from './Landing';
+import { AuthPage } from './AuthPage';
+import { Dashboard } from './Dashboard';
+import { User, signOut } from '@/lib/auth';
+
+type AppState = 'landing' | 'auth' | 'dashboard';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const [currentPage, setCurrentPage] = useState<AppState>('landing');
+  const [user, setUser] = useState<User | null>(null);
+
+  const handleNavigateToAuth = () => {
+    setCurrentPage('auth');
+  };
+
+  const handleAuthSuccess = (user: User) => {
+    setUser(user);
+    setCurrentPage('dashboard');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setCurrentPage('landing');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  const handleBackToLanding = () => {
+    setCurrentPage('landing');
+  };
+
+  switch (currentPage) {
+    case 'landing':
+      return <Landing onNavigateToAuth={handleNavigateToAuth} />;
+    case 'auth':
+      return (
+        <AuthPage 
+          onAuthSuccess={handleAuthSuccess} 
+          onBack={handleBackToLanding}
+        />
+      );
+    case 'dashboard':
+      return user ? (
+        <Dashboard user={user} onSignOut={handleSignOut} />
+      ) : null;
+    default:
+      return <Landing onNavigateToAuth={handleNavigateToAuth} />;
+  }
 };
 
 export default Index;

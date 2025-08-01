@@ -45,10 +45,10 @@ All colors MUST be HSL.
     --info: 217 91% 60%;
     --info-foreground: 0 0% 98%;
 
-    --gentech-navy: 214 84% 18%;
-    --gentech-blue: 217 91% 60%;
-    --gentech-slate: 215 16% 47%;
-    --gentech-light: 210 50% 94%;
+    --pitchforge-navy: 214 84% 18%;
+    --pitchforge-blue: 217 91% 60%;
+    --pitchforge-slate: 215 16% 47%;
+    --pitchforge-light: 210 50% 94%;
 
     --radius: 0.5rem;
 
@@ -107,10 +107,10 @@ All colors MUST be HSL.
     --info: 217 91% 60%;
     --info-foreground: 0 0% 98%;
 
-    --gentech-navy: 217 91% 60%;
-    --gentech-blue: 217 91% 60%;
-    --gentech-slate: 215 20% 65%;
-    --gentech-light: 215 25% 18%;
+    --pitchforge-navy: 217 91% 60%;
+    --pitchforge-blue: 217 91% 60%;
+    --pitchforge-slate: 215 20% 65%;
+    --pitchforge-light: 215 25% 18%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

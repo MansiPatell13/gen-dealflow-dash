@@ -28,9 +28,9 @@ export const Landing = ({
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">G</span>
+              <span className="text-primary-foreground font-bold text-lg">P</span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">GenTech</h1>
+            <h1 className="text-xl font-bold text-foreground">PitchForge</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={onNavigateToAuth}>
@@ -44,7 +44,7 @@ export const Landing = ({
       </header>
 
       {/* Hero Section */}
-      <section className="px-6 py-16 bg-gradient-to-br from-background to-gentech-light">
+      <section className="px-6 py-16 bg-gradient-to-br from-background to-pitchforge-light">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -54,7 +54,7 @@ export const Landing = ({
                   <span className="text-primary block">Business Proposals</span>
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Transform your business development workflow with GenTech's intelligent proposal automation platform. 
+                  Transform your business development workflow with PitchForge's intelligent proposal automation platform. 
                   Create winning proposals faster, collaborate seamlessly, and scale your success.
                 </p>
               </div>
@@ -120,7 +120,7 @@ export const Landing = ({
                 Transform Your Business Development Process
               </h2>
               <p className="text-lg text-muted-foreground">
-                Join thousands of companies that have revolutionized their proposal workflow with GenTech's 
+                Join thousands of companies that have revolutionized their proposal workflow with PitchForge's 
                 intelligent automation platform.
               </p>
               
@@ -180,7 +180,7 @@ export const Landing = ({
             Ready to Accelerate Your Business?
           </h2>
           <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
-            Join GenTech today and experience the future of business proposal automation. 
+            Join PitchForge today and experience the future of business proposal automation. 
             Start your free trial now.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -200,12 +200,12 @@ export const Landing = ({
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">G</span>
+              <span className="text-primary-foreground font-bold text-sm">P</span>
             </div>
-            <span className="text-lg font-bold text-foreground">GenTech</span>
+            <span className="text-lg font-bold text-foreground">PitchForge</span>
           </div>
           <p className="text-muted-foreground">
-            © 2024 GenTech. All rights reserved. Empowering businesses through intelligent automation.
+            © 2024 PitchForge. All rights reserved. Empowering businesses through intelligent automation.
           </p>
         </div>
       </footer>

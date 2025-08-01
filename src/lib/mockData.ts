@@ -44,8 +44,8 @@ export const mockProjectBriefs: ProjectBrief[] = [
     timeline: '3-4 months',
     clientDetails: 'TechCorp Inc. - Mid-size retailer looking to expand online',
     status: 'in_progress',
-    submittedBy: 'customer@gentech.com',
-    assignedTo: 'member@gentech.com',
+    submittedBy: 'customer@pitchforge.com',
+    assignedTo: 'member@pitchforge.com',
     createdAt: '2024-01-15',
     updatedAt: '2024-01-20'
   },
@@ -58,7 +58,7 @@ export const mockProjectBriefs: ProjectBrief[] = [
     timeline: '6-8 weeks',
     clientDetails: 'DataFlow Solutions - SaaS company with 500+ users',
     status: 'submitted',
-    submittedBy: 'customer@gentech.com',
+    submittedBy: 'customer@pitchforge.com',
     createdAt: '2024-01-22',
     updatedAt: '2024-01-22'
   },
@@ -71,8 +71,8 @@ export const mockProjectBriefs: ProjectBrief[] = [
     timeline: '4-6 months',
     clientDetails: 'HealthTech Partners - Healthcare provider network',
     status: 'completed',
-    submittedBy: 'customer@gentech.com',
-    assignedTo: 'member@gentech.com',
+    submittedBy: 'customer@pitchforge.com',
+    assignedTo: 'member@pitchforge.com',
     createdAt: '2024-01-10',
     updatedAt: '2024-01-25'
   }
@@ -115,7 +115,7 @@ export const mockSolutionPitches: SolutionPitch[] = [
     title: 'Modern E-commerce Platform Proposal',
     content: 'We propose building a scalable e-commerce platform using React, Node.js, and cloud infrastructure...',
     status: 'submitted',
-    createdBy: 'member@gentech.com',
+    createdBy: 'member@pitchforge.com',
     createdAt: '2024-01-21'
   },
   {
@@ -124,7 +124,7 @@ export const mockSolutionPitches: SolutionPitch[] = [
     title: 'Healthcare Mobile App Solution',
     content: 'Our healthcare mobile application will provide secure patient management with HIPAA compliance...',
     status: 'approved',
-    createdBy: 'member@gentech.com',
+    createdBy: 'member@pitchforge.com',
     createdAt: '2024-01-18',
     feedback: 'Excellent proposal. Approved for implementation.'
   }

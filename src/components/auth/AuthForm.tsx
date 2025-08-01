@@ -51,7 +51,7 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
         <CardDescription>
           {mode === 'signin' 
             ? 'Enter your credentials to access your account'
-            : 'Create your GenTech account'
+            : 'Create your PitchForge account'
           }
         </CardDescription>
       </CardHeader>
@@ -156,9 +156,9 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-sm font-medium mb-2">Demo Accounts:</p>
             <div className="text-xs space-y-1">
-              <div>Customer: customer@gentech.com / password</div>
-              <div>Manager: manager@gentech.com / password</div>
-              <div>Member: member@gentech.com / password</div>
+              <div>Customer: customer@pitchforge.com / password</div>
+              <div>Manager: manager@pitchforge.com / password</div>
+              <div>Member: member@pitchforge.com / password</div>
             </div>
           </div>
         )}

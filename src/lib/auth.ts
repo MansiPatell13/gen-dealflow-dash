@@ -14,30 +14,30 @@ export interface AuthState {
 
 // Mock user data
 const mockUsers: Record<string, { password: string; user: User }> = {
-  'customer@gentech.com': {
+  'customer@pitchforge.com': {
     password: 'password',
     user: {
       id: '1',
       name: 'John Customer',
-      email: 'customer@gentech.com',
+      email: 'customer@pitchforge.com',
       role: 'customer'
     }
   },
-  'manager@gentech.com': {
+  'manager@pitchforge.com': {
     password: 'password',
     user: {
       id: '2',
       name: 'Sarah Manager',
-      email: 'manager@gentech.com',
+      email: 'manager@pitchforge.com',
       role: 'team_manager'
     }
   },
-  'member@gentech.com': {
+  'member@pitchforge.com': {
     password: 'password',
     user: {
       id: '3',
       name: 'Mike Developer',
-      email: 'member@gentech.com',
+      email: 'member@pitchforge.com',
       role: 'team_member'
     }
   }

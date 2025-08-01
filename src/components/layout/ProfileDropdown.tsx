@@ -14,9 +14,11 @@ import { User as UserType } from '@/lib/auth';
 interface ProfileDropdownProps {
   user: UserType;
   onSignOut: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToProfile?: () => void;
 }
 
-export const ProfileDropdown = ({ user, onSignOut }: ProfileDropdownProps) => {
+export const ProfileDropdown = ({ user, onSignOut, onNavigateToSettings, onNavigateToProfile }: ProfileDropdownProps) => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -62,11 +64,11 @@ export const ProfileDropdown = ({ user, onSignOut }: ProfileDropdownProps) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem className="cursor-pointer" onClick={onNavigateToProfile}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem className="cursor-pointer" onClick={onNavigateToSettings}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>

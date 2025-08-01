@@ -1,15 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { User as UserType } from "@/lib/auth";
 import { ProfileDropdown } from './ProfileDropdown';
 import { NotificationSystem } from '../notifications/NotificationSystem';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HeaderProps {
   user?: UserType | null;
   onSignOut?: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToProfile?: () => void;
 }
 
-export const Header = ({ user, onSignOut }: HeaderProps) => {
+export const Header = ({ user, onSignOut, onNavigateToSettings, onNavigateToProfile }: HeaderProps) => {
+  const { theme, toggleTheme } = useTheme();
+  
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'customer': return 'Customer';
@@ -31,8 +36,25 @@ export const Header = ({ user, onSignOut }: HeaderProps) => {
         
         {user && (
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="h-9 w-9 p-0"
+            >
+              {theme === 'light' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
             <NotificationSystem userRole={user.role} />
-            <ProfileDropdown user={user} onSignOut={onSignOut} />
+            <ProfileDropdown 
+              user={user} 
+              onSignOut={onSignOut}
+              onNavigateToSettings={onNavigateToSettings}
+              onNavigateToProfile={onNavigateToProfile}
+            />
           </div>
         )}
       </div>

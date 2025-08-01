@@ -5,8 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target } from 'lucide-react';
+import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target, BarChart3, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AssignmentPanel } from '@/components/assignment/AssignmentPanel';
+import { CaseStudyManager } from '@/components/case-studies/CaseStudyManager';
+import { PitchReviewPanel } from '@/components/solution-pitch/PitchReviewPanel';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 
 interface TeamManagerDashboardProps {
   user: User;
@@ -158,8 +162,10 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
       <Tabs defaultValue="projects" className="space-y-4">
         <TabsList>
           <TabsTrigger value="projects">Project Management</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="case-studies">Case Studies</TabsTrigger>
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects" className="space-y-4">
@@ -205,111 +211,31 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="case-studies" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Case Study Library</CardTitle>
-              <CardDescription>
-                Recommended case studies with relevance scoring
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {caseStudies.map((study) => (
-                  <div key={study.id} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-medium text-foreground">{study.title}</h3>
-                          <Badge className={getRelevanceColor(study.relevanceScore)}>
-                            <Target className="h-3 w-3 mr-1" />
-                            {study.relevanceScore}% relevance
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{study.industry}</p>
-                        <p className="text-sm text-foreground">{study.description}</p>
-                        <p className="text-sm text-success mt-2">
-                          <strong>Outcome:</strong> {study.outcome}
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Full Case
-                      </Button>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      {study.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="assignments">
+          <AssignmentPanel 
+            briefs={projects}
+            onAssignmentChange={(briefId, assigneeEmail) => {
+              setProjects(prev => prev.map(p => 
+                p.id === briefId ? { ...p, assignedTo: assigneeEmail, status: 'in_progress' } : p
+              ));
+              toast({
+                title: "Assignment Updated",
+                description: "Project has been assigned successfully",
+              });
+            }}
+          />
         </TabsContent>
 
-        <TabsContent value="proposals" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Solution Pitches</CardTitle>
-              <CardDescription>
-                Review and approve proposals before client delivery
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {pitches.map((pitch) => {
-                  const relatedProject = projects.find(p => p.id === pitch.briefId);
-                  return (
-                    <div key={pitch.id} className="border border-border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-medium text-foreground">{pitch.title}</h3>
-                            <Badge className={getStatusColor(pitch.status)}>
-                              {pitch.status}
-                            </Badge>
-                          </div>
-                          {relatedProject && (
-                            <p className="text-sm text-muted-foreground">
-                              Project: {relatedProject.title}
-                            </p>
-                          )}
-                          <p className="text-sm text-foreground mt-2">{pitch.content}</p>
-                          {pitch.feedback && (
-                            <p className="text-sm text-success mt-2">
-                              <strong>Feedback:</strong> {pitch.feedback}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          {pitch.status === 'submitted' && (
-                            <>
-                              <Button variant="outline" size="sm">
-                                Request Changes
-                              </Button>
-                              <Button size="sm">
-                                Approve
-                              </Button>
-                            </>
-                          )}
-                          <Button variant="outline" size="sm">
-                            View Full
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                        <span>Created by: {pitch.createdBy}</span>
-                        <span>Date: {pitch.createdAt}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="case-studies" className="space-y-4">
+          <CaseStudyManager />
+        </TabsContent>
+
+        <TabsContent value="proposals">
+          <PitchReviewPanel />
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <AnalyticsDashboard />
         </TabsContent>
       </Tabs>
     </div>

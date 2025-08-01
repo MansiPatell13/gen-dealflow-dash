@@ -32,6 +32,7 @@ export interface SolutionPitch {
   createdBy: string;
   createdAt: string;
   feedback?: string;
+  clientEmail?: string;
 }
 
 export const mockProjectBriefs: ProjectBrief[] = [
@@ -116,7 +117,8 @@ export const mockSolutionPitches: SolutionPitch[] = [
     content: 'We propose building a scalable e-commerce platform using React, Node.js, and cloud infrastructure...',
     status: 'submitted',
     createdBy: 'member@pitchforge.com',
-    createdAt: '2024-01-21'
+    createdAt: '2024-01-21',
+    clientEmail: 'customer@pitchforge.com'
   },
   {
     id: '2',
@@ -126,7 +128,8 @@ export const mockSolutionPitches: SolutionPitch[] = [
     status: 'approved',
     createdBy: 'member@pitchforge.com',
     createdAt: '2024-01-18',
-    feedback: 'Excellent proposal. Approved for implementation.'
+    feedback: 'Excellent proposal. Approved for implementation.',
+    clientEmail: 'customer@pitchforge.com'
   }
 ];
 

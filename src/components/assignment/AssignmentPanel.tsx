@@ -22,7 +22,7 @@ interface TeamMember {
 
 interface AssignmentPanelProps {
   briefs: ProjectBrief[];
-  onAssignmentChange: () => void;
+  onAssignmentChange: (briefId: string, assigneeEmail: string) => void;
 }
 
 export const AssignmentPanel = ({ briefs, onAssignmentChange }: AssignmentPanelProps) => {
@@ -117,7 +117,7 @@ export const AssignmentPanel = ({ briefs, onAssignmentChange }: AssignmentPanelP
       setSelectedBrief(null);
       setSelectedMember('');
       setAssignmentNotes('');
-      onAssignmentChange();
+      onAssignmentChange(selectedBrief.id, member?.email || '');
     } catch (error) {
       toast({
         title: "Assignment failed",

@@ -6,8 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Briefcase, BookOpen, FileEdit, Clock, AlertCircle, Target, Lightbulb } from 'lucide-react';
+import { Briefcase, BookOpen, FileEdit, Clock, AlertCircle, Target, Lightbulb, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AssignmentNotifications } from '@/components/team-member/AssignmentNotifications';
+import { SolutionPitchForm } from '@/components/solution-pitch/SolutionPitchForm';
 
 interface TeamMemberDashboardProps {
   user: User;
@@ -157,6 +159,7 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
           <TabsTrigger value="assignments">My Assignments</TabsTrigger>
           <TabsTrigger value="case-studies">Case Studies</TabsTrigger>
           <TabsTrigger value="pitches">My Pitches</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="assignments" className="space-y-4">
@@ -197,9 +200,23 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
                           <Button variant="outline" size="sm">
                             Start Working
                           </Button>
-                          <Button size="sm">
-                            Create Pitch
-                          </Button>
+                          <SolutionPitchForm 
+                            brief={project} 
+                            onSubmit={async (pitch) => {
+                              console.log('Pitch submitted:', pitch);
+                              toast({
+                                title: "Success",
+                                description: "Solution pitch submitted for review",
+                              });
+                            }}
+                            onSaveDraft={async (pitch) => {
+                              console.log('Pitch saved as draft:', pitch);
+                              toast({
+                                title: "Draft saved",
+                                description: "Your pitch has been saved as a draft",
+                              });
+                            }}
+                          />
                         </div>
                       </div>
                       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
@@ -350,6 +367,10 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <AssignmentNotifications userEmail={user.email} />
         </TabsContent>
       </Tabs>
     </div>

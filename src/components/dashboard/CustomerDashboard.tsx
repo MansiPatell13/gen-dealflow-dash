@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectBrief, fetchProjectBriefs, submitProjectBrief } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FinalizedPitchViewer } from '@/components/customer/FinalizedPitchViewer';
 
 interface CustomerDashboardProps {
   user: User;
@@ -121,7 +123,7 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Customer Dashboard</h1>
-          <p className="text-muted-foreground">Manage your project briefs and proposals</p>
+          <p className="text-muted-foreground">Manage your project briefs and view solutions</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -235,46 +237,59 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Project Briefs</CardTitle>
-          <CardDescription>
-            Track the status of your submitted projects
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {projects.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No projects yet</h3>
-              <p className="text-muted-foreground">Submit your first project brief to get started</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {projects.map((project) => (
-                <div key={project.id} className="border border-border rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground">{project.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{project.industry} • {project.budget}</p>
-                      <p className="text-sm text-muted-foreground mt-2">{project.objectives}</p>
-                    </div>
-                    <Badge className={`gap-1 ${getStatusColor(project.status)}`}>
-                      {getStatusIcon(project.status)}
-                      {project.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <span>Submitted: {project.createdAt}</span>
-                    <span>Timeline: {project.timeline}</span>
-                    {project.assignedTo && <span>Assigned to: {project.assignedTo}</span>}
-                  </div>
+      <Tabs defaultValue="projects" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="projects">My Projects</TabsTrigger>
+          <TabsTrigger value="solutions">Solution Proposals</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="projects">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Project Briefs</CardTitle>
+              <CardDescription>
+                Track the status of your submitted projects
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {projects.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No projects yet</h3>
+                  <p className="text-muted-foreground">Submit your first project brief to get started</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              ) : (
+                <div className="space-y-4">
+                  {projects.map((project) => (
+                    <div key={project.id} className="border border-border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-foreground">{project.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{project.industry} • {project.budget}</p>
+                          <p className="text-sm text-muted-foreground mt-2">{project.objectives}</p>
+                        </div>
+                        <Badge className={`gap-1 ${getStatusColor(project.status)}`}>
+                          {getStatusIcon(project.status)}
+                          {project.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                        <span>Submitted: {project.createdAt}</span>
+                        <span>Timeline: {project.timeline}</span>
+                        {project.assignedTo && <span>Assigned to: {project.assignedTo}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="solutions">
+          <FinalizedPitchViewer user={user} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

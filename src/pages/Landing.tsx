@@ -188,7 +188,7 @@ export const Landing = ({
               Start Free Trial
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button size="lg" variant="outline" className="border-primary-foreground/20 bg-slate-50 text-gray-950">
+            <Button size="lg" variant="outline" className="border-primary-foreground/20 bg-slate-50 text-sky-950">
               Contact Sales
             </Button>
           </div>

@@ -1,73 +1,166 @@
-# Welcome to your Lovable project
+# PitchForge - Proposal Automation Platform
 
-## Project info
+A comprehensive web application for automating business proposal generation and management, built with React frontend and Node.js backend.
 
-**URL**: https://lovable.dev/projects/282545a4-0ed5-4d96-be6a-4fb5b705766b
+## Project Structure
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/282545a4-0ed5-4d96-be6a-4fb5b705766b) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+gen-dealflow-dash/
+├── frontend/                 # React frontend application
+│   ├── src/
+│   │   ├── components/       # React components
+│   │   ├── pages/           # Page components
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── lib/             # Utilities and services
+│   │   └── assets/          # Static assets
+│   ├── public/              # Public assets
+│   └── package.json         # Frontend dependencies
+├── backend/                  # Node.js backend API
+│   ├── src/
+│   │   ├── controllers/     # Route controllers
+│   │   ├── models/          # Data models
+│   │   ├── routes/          # API routes
+│   │   ├── middleware/      # Express middleware
+│   │   ├── services/        # Business logic
+│   │   └── utils/           # Utility functions
+│   └── package.json         # Backend dependencies
+└── README.md                # This file
 ```
 
-**Edit a file directly in GitHub**
+## Features
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Core Functionality
+- **Project Brief Management**: Upload, parse, and manage project requirements
+- **Case Study Recommendations**: AI-powered similarity scoring and recommendations
+- **Solution Pitch Generation**: Automated proposal generation with case study integration
+- **Role-based Access Control**: Customer, Team Manager, and Team Member roles
+- **Workflow Management**: Complete proposal lifecycle management
 
-**Use GitHub Codespaces**
+### User Roles
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+#### Customer
+- Submit project briefs with detailed requirements
+- Track proposal status and progress
+- Review and approve finalized proposals
+- View project history and outcomes
 
-## What technologies are used for this project?
+#### Team Manager
+- Overview dashboard with project analytics
+- Assign projects to team members
+- Review and approve solution pitches
+- Manage case studies and reference materials
+- Monitor team performance and project metrics
 
-This project is built with:
+#### Team Member
+- View assigned projects and tasks
+- Create solution pitches based on project briefs
+- Access relevant case studies and reference materials
+- Submit work for review and approval
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Technology Stack
 
-## How can I deploy this project?
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **UI Library**: shadcn/ui (Radix UI + Tailwind CSS)
+- **State Management**: React Query (TanStack Query)
+- **Routing**: React Router DOM
+- **Form Handling**: React Hook Form with Zod validation
+- **Styling**: Tailwind CSS with custom design system
 
-Simply open [Lovable](https://lovable.dev/projects/282545a4-0ed5-4d96-be6a-4fb5b705766b) and click on Share -> Publish.
+### Backend
+- **Runtime**: Node.js with ES modules
+- **Framework**: Express.js
+- **Authentication**: JWT with bcryptjs
+- **Validation**: Express-validator
+- **Security**: Helmet, CORS, Rate limiting
+- **Documentation**: Comprehensive API documentation
 
-## Can I connect a custom domain to my Lovable project?
+## Quick Start
 
-Yes, you can!
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend will be available at `http://localhost:5173`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Backend Setup
+```bash
+cd backend
+npm install
+cp env.example .env
+# Edit .env with your configuration
+npm run dev
+```
+Backend API will be available at `http://localhost:5000`
+
+## Development
+
+### Frontend Development
+- Modern React with TypeScript
+- Component-based architecture
+- Responsive design with mobile-first approach
+- Comprehensive UI component library
+
+### Backend Development
+- RESTful API design
+- Role-based authentication and authorization
+- Comprehensive input validation
+- Error handling and logging
+- Security best practices
+
+## API Documentation
+
+See [Backend README](./backend/README.md) for complete API documentation including:
+- Authentication endpoints
+- Project brief management
+- Case study recommendations
+- Solution pitch generation
+- User management
+- Statistics and analytics
+
+## Current Status
+
+### ✅ Implemented
+- Complete frontend UI with role-based dashboards
+- Backend API with authentication and authorization
+- Project brief management system
+- Case study recommendation engine
+- Solution pitch generation
+- User role management
+- Comprehensive error handling
+
+### 🚧 In Progress
+- File upload functionality for project briefs
+- Enhanced similarity scoring algorithm
+- Real-time notifications
+- Advanced analytics dashboard
+
+### 📋 Planned
+- Database integration (PostgreSQL/MongoDB)
+- File storage system
+- Email notifications
+- Advanced AI features
+- Mobile app development
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+For questions or support, please open an issue in the repository.

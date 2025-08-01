@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { User, LogOut } from "lucide-react";
 import { User as UserType } from "@/lib/auth";
+import { ProfileDropdown } from './ProfileDropdown';
+import { NotificationSystem } from '../notifications/NotificationSystem';
 
 interface HeaderProps {
   user?: UserType | null;
@@ -28,22 +30,9 @@ export const Header = ({ user, onSignOut }: HeaderProps) => {
         </div>
         
         {user && (
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <div className="font-medium text-foreground">{user.name}</div>
-                <div className="text-muted-foreground">{getRoleDisplay(user.role)}</div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onSignOut}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-4">
+            <NotificationSystem userRole={user.role} />
+            <ProfileDropdown user={user} onSignOut={onSignOut} />
           </div>
         )}
       </div>

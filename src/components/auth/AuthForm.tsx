@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserRole } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
+import { PasswordResetModal } from './PasswordResetModal';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
@@ -23,6 +24,7 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,16 +155,34 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
         </div>
         
         {mode === 'signin' && (
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-2">Demo Accounts:</p>
-            <div className="text-xs space-y-1">
-              <div>Customer: customer@pitchforge.com / password</div>
-              <div>Manager: manager@pitchforge.com / password</div>
-              <div>Member: member@pitchforge.com / password</div>
+          <>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(true)}
+                className="text-sm text-primary hover:underline"
+                disabled={isLoading}
+              >
+                Forgot your password?
+              </button>
             </div>
-          </div>
+            
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-2">Demo Accounts:</p>
+              <div className="text-xs space-y-1">
+                <div>Customer: customer@pitchforge.com / password</div>
+                <div>Manager: manager@pitchforge.com / password</div>
+                <div>Member: member@pitchforge.com / password</div>
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
+      
+      <PasswordResetModal 
+        isOpen={isResetModalOpen} 
+        onClose={() => setIsResetModalOpen(false)} 
+      />
     </Card>
   );
 };

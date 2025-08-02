@@ -379,4 +379,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **PitchForge** - Streamlining proposal generation and management for modern businesses.
 
-*Built with ❤️ using React, TypeScript, and Node.js*

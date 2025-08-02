@@ -1,21 +1,50 @@
 import express from 'express';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
-import { User, mockUsers } from '../models/User.js';
+import { body, validationResult } from 'express-validator';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Mock users data
+let mockUsers = [
+  {
+    id: '1',
+    name: 'John Customer',
+    email: 'customer@pitchforge.com',
+    role: 'customer',
+    createdAt: '2024-01-01'
+  },
+  {
+    id: '2',
+    name: 'Sarah Manager',
+    email: 'manager@pitchforge.com',
+    role: 'team_manager',
+    createdAt: '2024-01-01'
+  },
+  {
+    id: '3',
+    name: 'Mike Developer',
+    email: 'member@pitchforge.com',
+    role: 'team_member',
+    createdAt: '2024-01-01'
+  }
+];
+
 // Get all users (team managers only)
-router.get('/', [
-  authenticateToken,
-  requireRole(['team_manager'])
-], (req, res) => {
+router.get('/', authenticateToken, (req, res) => {
   try {
-    const users = mockUsers.map(user => new User(user).toJSON());
+    const { role } = req.user;
+
+    // Only team managers can see all users
+    if (role !== 'team_manager') {
+      return res.status(403).json({ 
+        error: 'Access denied' 
+      });
+    }
 
     res.json({
       success: true,
-      data: users,
-      count: users.length
+      data: mockUsers,
+      count: mockUsers.length
     });
 
   } catch (error) {
@@ -26,32 +55,30 @@ router.get('/', [
   }
 });
 
-// Get user by ID
+// Get single user by ID
 router.get('/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
     const { role, email } = req.user;
 
-    const userData = mockUsers.find(u => u.id === id);
+    const user = mockUsers.find(u => u.id === id);
     
-    if (!userData) {
+    if (!user) {
       return res.status(404).json({ 
         error: 'User not found' 
       });
     }
 
-    // Check permissions - users can only view their own profile or team managers can view all
-    if (role !== 'team_manager' && userData.email !== email) {
+    // Check permissions - users can only see their own profile, team managers can see all
+    if (role !== 'team_manager' && user.email !== email) {
       return res.status(403).json({ 
         error: 'Access denied' 
       });
     }
 
-    const user = new User(userData);
-
     res.json({
       success: true,
-      data: user.toJSON()
+      data: user
     });
 
   } catch (error) {
@@ -62,98 +89,179 @@ router.get('/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Get user permissions
-router.get('/:id/permissions', authenticateToken, (req, res) => {
+// Update user profile
+router.put('/:id', [
+  authenticateToken,
+  body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').optional().isEmail().withMessage('Valid email is required'),
+  body('role').optional().isIn(['customer', 'team_member', 'team_manager']).withMessage('Valid role is required')
+], (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: errors.array() 
+      });
+    }
+
     const { id } = req.params;
     const { role, email } = req.user;
+    const updateData = req.body;
 
-    const userData = mockUsers.find(u => u.id === id);
+    const userIndex = mockUsers.findIndex(u => u.id === id);
     
-    if (!userData) {
+    if (userIndex === -1) {
       return res.status(404).json({ 
         error: 'User not found' 
       });
     }
 
+    const user = mockUsers[userIndex];
+
     // Check permissions
-    if (role !== 'team_manager' && userData.email !== email) {
+    if (role !== 'team_manager' && user.email !== email) {
       return res.status(403).json({ 
         error: 'Access denied' 
       });
     }
 
-    const user = new User(userData);
-    const permissions = User.getRolePermissions(user.role);
+    // Only team managers can change roles
+    if (updateData.role && role !== 'team_manager') {
+      return res.status(403).json({ 
+        error: 'Only team managers can change user roles' 
+      });
+    }
 
-    res.json({
-      success: true,
-      data: {
-        userId: user.id,
-        role: user.role,
-        permissions
-      }
-    });
-
-  } catch (error) {
-    console.error('Get user permissions error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// Get user statistics
-router.get('/stats/overview', [
-  authenticateToken,
-  requireRole(['team_manager'])
-], (req, res) => {
-  try {
-    const stats = {
-      total: mockUsers.length,
-      byRole: {
-        customer: 0,
-        team_manager: 0,
-        team_member: 0
-      }
+    // Update user
+    const updatedUser = {
+      ...user,
+      ...updateData
     };
 
-    // Calculate role distribution
-    mockUsers.forEach(user => {
-      stats.byRole[user.role] = (stats.byRole[user.role] || 0) + 1;
-    });
+    mockUsers[userIndex] = updatedUser;
 
     res.json({
       success: true,
-      data: stats
+      message: 'User updated successfully',
+      data: updatedUser
     });
 
   } catch (error) {
-    console.error('Get user stats error:', error);
+    console.error('Update user error:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });
   }
 });
 
-// Get team members (for assignment purposes)
-router.get('/team/members', [
-  authenticateToken,
-  requireRole(['team_manager'])
-], (req, res) => {
+// Delete user (team managers only)
+router.delete('/:id', authenticateToken, (req, res) => {
   try {
-    const teamMembers = mockUsers
-      .filter(user => user.role === 'team_member')
-      .map(user => new User(user).toJSON());
+    const { id } = req.params;
+    const { role } = req.user;
+
+    // Only team managers can delete users
+    if (role !== 'team_manager') {
+      return res.status(403).json({ 
+        error: 'Access denied' 
+      });
+    }
+
+    const userIndex = mockUsers.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+
+    // Remove from mock data
+    mockUsers.splice(userIndex, 1);
 
     res.json({
       success: true,
-      data: teamMembers,
-      count: teamMembers.length
+      message: 'User deleted successfully'
     });
 
   } catch (error) {
-    console.error('Get team members error:', error);
+    console.error('Delete user error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Get current user profile
+router.get('/profile/me', authenticateToken, (req, res) => {
+  try {
+    const { email } = req.user;
+
+    const user = mockUsers.find(u => u.email === email);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Update current user profile
+router.put('/profile/me', [
+  authenticateToken,
+  body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').optional().isEmail().withMessage('Valid email is required')
+], (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: errors.array() 
+      });
+    }
+
+    const { email } = req.user;
+    const updateData = req.body;
+
+    const userIndex = mockUsers.findIndex(u => u.email === email);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+
+    // Update user
+    const updatedUser = {
+      ...mockUsers[userIndex],
+      ...updateData
+    };
+
+    mockUsers[userIndex] = updatedUser;
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    console.error('Update profile error:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });

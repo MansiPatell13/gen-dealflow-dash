@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches } from '@/lib/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches, createSolutionPitch, updateSolutionPitch } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Briefcase, BookOpen, FileEdit, Clock, AlertCircle, Target, Lightbulb, Bell } from 'lucide-react';
+import { Briefcase, BookOpen, FileEdit, Clock, AlertCircle, Target, Lightbulb, Bell, Eye, Edit, Send, CheckCircle, XCircle, MessageSquare, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AssignmentNotifications } from '@/components/team-member/AssignmentNotifications';
 import { SolutionPitchForm } from '@/components/solution-pitch/SolutionPitchForm';
@@ -21,6 +24,12 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
   const [myPitches, setMyPitches] = useState<SolutionPitch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activePitch, setActivePitch] = useState('');
+  const [selectedProject, setSelectedProject] = useState<ProjectBrief | null>(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showPitchModal, setShowPitchModal] = useState(false);
+  const [selectedPitch, setSelectedPitch] = useState<SolutionPitch | null>(null);
+  const [showPitchDetailModal, setShowPitchDetailModal] = useState(false);
+  const [pitchStatus, setPitchStatus] = useState<'draft' | 'submitted' | 'approved' | 'rejected'>('draft');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,6 +63,119 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
     }
   };
 
+  const handleViewProject = (project: ProjectBrief) => {
+    setSelectedProject(project);
+    setShowProjectModal(true);
+  };
+
+  const handleStartWorking = async (project: ProjectBrief) => {
+    try {
+      // Update project status to in progress
+      const updatedProject = { ...project, status: 'in_progress' as const };
+      setAssignedProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+      
+      toast({
+        title: "Started working",
+        description: `You've started working on "${project.title}"`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update project status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreatePitch = (project: ProjectBrief) => {
+    setSelectedProject(project);
+    setShowPitchModal(true);
+  };
+
+  const handleViewPitch = (pitch: SolutionPitch) => {
+    setSelectedPitch(pitch);
+    setShowPitchDetailModal(true);
+  };
+
+  const handleEditPitch = (pitch: SolutionPitch) => {
+    setSelectedPitch(pitch);
+    setShowPitchModal(true);
+  };
+
+  const handleSubmitPitch = async () => {
+    if (!activePitch.trim() || !selectedProject) return;
+    
+    try {
+      const newPitch = await createSolutionPitch({
+        briefId: selectedProject.id,
+        title: `Solution for ${selectedProject.title}`,
+        content: activePitch,
+        status: 'submitted',
+        createdBy: user.email,
+        clientEmail: selectedProject.submittedBy
+      });
+      
+      setMyPitches(prev => [newPitch, ...prev]);
+      setActivePitch('');
+      setShowPitchModal(false);
+      setSelectedProject(null);
+      
+      toast({
+        title: "Success",
+        description: "Solution pitch submitted for review",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit pitch",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdatePitchStatus = async (pitchId: string, newStatus: 'draft' | 'submitted' | 'approved' | 'rejected') => {
+    try {
+      await updateSolutionPitch(pitchId, { status: newStatus });
+      setMyPitches(prev => prev.map(p => p.id === pitchId ? { ...p, status: newStatus } : p));
+      
+      toast({
+        title: "Status updated",
+        description: `Pitch status updated to ${newStatus}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update pitch status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadPitch = (pitch: SolutionPitch) => {
+    const pitchData = {
+      title: pitch.title,
+      content: pitch.content,
+      status: pitch.status,
+      createdAt: pitch.createdAt,
+      feedback: pitch.feedback
+    };
+
+    const blob = new Blob([JSON.stringify(pitchData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${pitch.title.replace(/\s+/g, '_')}_pitch.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded",
+      description: "Pitch downloaded successfully",
+    });
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'submitted': return <Clock className="h-4 w-4" />;
@@ -74,21 +196,21 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
     }
   };
 
+  const getPitchStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'bg-muted/10 text-muted-foreground border-muted/20';
+      case 'submitted': return 'bg-warning/10 text-warning border-warning/20';
+      case 'approved': return 'bg-success/10 text-success border-success/20';
+      case 'rejected': return 'bg-destructive/10 text-destructive border-destructive/20';
+      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
+    }
+  };
+
   const getRelevanceColor = (score: number) => {
     if (score >= 90) return 'bg-success/10 text-success border-success/20';
     if (score >= 80) return 'bg-info/10 text-info border-info/20';
     if (score >= 70) return 'bg-warning/10 text-warning border-warning/20';
     return 'bg-muted/10 text-muted-foreground border-muted/20';
-  };
-
-  const handleSubmitPitch = () => {
-    if (!activePitch.trim()) return;
-    
-    toast({
-      title: "Success",
-      description: "Solution pitch submitted for review",
-    });
-    setActivePitch('');
   };
 
   if (isLoading) {
@@ -197,24 +319,71 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Start Working
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewProject(project)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
                           </Button>
+                          {project.status === 'submitted' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStartWorking(project)}
+                            >
+                              <Target className="h-4 w-4 mr-1" />
+                              Start Working
+                            </Button>
+                          )}
                           <SolutionPitchForm 
                             brief={project} 
                             onSubmit={async (pitch) => {
-                              console.log('Pitch submitted:', pitch);
-                              toast({
-                                title: "Success",
-                                description: "Solution pitch submitted for review",
-                              });
+                              try {
+                                const newPitch = await createSolutionPitch({
+                                  briefId: project.id,
+                                  title: pitch.title,
+                                  content: pitch.content,
+                                  status: 'submitted',
+                                  createdBy: user.email,
+                                  clientEmail: project.submittedBy
+                                });
+                                setMyPitches(prev => [newPitch, ...prev]);
+                                toast({
+                                  title: "Success",
+                                  description: "Solution pitch submitted for review",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to submit pitch",
+                                  variant: "destructive"
+                                });
+                              }
                             }}
                             onSaveDraft={async (pitch) => {
-                              console.log('Pitch saved as draft:', pitch);
-                              toast({
-                                title: "Draft saved",
-                                description: "Your pitch has been saved as a draft",
-                              });
+                              try {
+                                const newPitch = await createSolutionPitch({
+                                  briefId: project.id,
+                                  title: pitch.title,
+                                  content: pitch.content,
+                                  status: 'draft',
+                                  createdBy: user.email,
+                                  clientEmail: project.submittedBy
+                                });
+                                setMyPitches(prev => [newPitch, ...prev]);
+                                toast({
+                                  title: "Draft saved",
+                                  description: "Your pitch has been saved as a draft",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to save draft",
+                                  variant: "destructive"
+                                });
+                              }
                             }}
                           />
                         </div>
@@ -227,35 +396,6 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Pitch Creation Area */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Create Solution Pitch
-              </CardTitle>
-              <CardDescription>
-                Draft your solution proposal for assigned projects
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                placeholder="Describe your proposed solution, approach, and implementation plan..."
-                value={activePitch}
-                onChange={(e) => setActivePitch(e.target.value)}
-                className="min-h-32"
-              />
-              <div className="flex gap-2">
-                <Button onClick={handleSubmitPitch} disabled={!activePitch.trim()}>
-                  Submit for Review
-                </Button>
-                <Button variant="outline" onClick={() => setActivePitch('')}>
-                  Clear
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -330,7 +470,7 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <h3 className="font-medium text-foreground">{pitch.title}</h3>
-                              <Badge className={getStatusColor(pitch.status)}>
+                              <Badge className={getPitchStatusColor(pitch.status)}>
                                 {pitch.status}
                               </Badge>
                             </div>
@@ -349,12 +489,36 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
                             )}
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              Edit
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewPitch(pitch)}
+                            >
+                              <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
-                              View Full
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditPitch(pitch)}
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDownloadPitch(pitch)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            {pitch.status === 'draft' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleUpdatePitchStatus(pitch.id, 'submitted')}
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
@@ -373,6 +537,91 @@ export const TeamMemberDashboard = ({ user }: TeamMemberDashboardProps) => {
           <AssignmentNotifications userEmail={user.email} />
         </TabsContent>
       </Tabs>
+
+      {/* Project Detail Modal */}
+      <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title}</DialogTitle>
+            <DialogDescription>
+              Detailed view of your assigned project
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProject && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Industry</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.industry}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Budget</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.budget}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Timeline</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.timeline}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <Badge className={getStatusColor(selectedProject.status)}>
+                    {selectedProject.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Objectives</Label>
+                <p className="text-sm text-muted-foreground mt-1">{selectedProject.objectives}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Client Details</Label>
+                <p className="text-sm text-muted-foreground mt-1">{selectedProject.clientDetails}</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>Submitted: {selectedProject.createdAt}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pitch Detail Modal */}
+      <Dialog open={showPitchDetailModal} onOpenChange={setShowPitchDetailModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedPitch?.title}</DialogTitle>
+            <DialogDescription>
+              Detailed view of your solution pitch
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPitch && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Badge className={getPitchStatusColor(selectedPitch.status)}>
+                  {selectedPitch.status}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  Created: {selectedPitch.createdAt}
+                </span>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Content</Label>
+                <div className="mt-2 p-3 bg-muted rounded-lg">
+                  <p className="text-sm whitespace-pre-wrap">{selectedPitch.content}</p>
+                </div>
+              </div>
+              {selectedPitch.feedback && (
+                <div>
+                  <Label className="text-sm font-medium">Manager Feedback</Label>
+                  <div className="mt-2 p-3 bg-success/5 border border-success/20 rounded-lg">
+                    <p className="text-sm text-success">{selectedPitch.feedback}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

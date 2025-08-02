@@ -3,9 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches } from '@/lib/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ProjectBrief, CaseStudy, SolutionPitch, fetchProjectBriefs, fetchCaseStudies, fetchSolutionPitches, updateProjectBrief } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target, BarChart3, UserCheck, Eye } from 'lucide-react';
+import { Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Target, BarChart3, UserCheck, Eye, Edit, Trash2, Send, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AssignmentPanel } from '@/components/assignment/AssignmentPanel';
 import { CaseStudyManager } from '@/components/case-studies/CaseStudyManager';
@@ -17,17 +21,36 @@ interface TeamManagerDashboardProps {
   user: User;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  expertise: string[];
+  currentLoad: number;
+  maxCapacity: number;
+  availability: 'available' | 'busy' | 'unavailable';
+}
+
 export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
   const [projects, setProjects] = useState<ProjectBrief[]>([]);
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [pitches, setPitches] = useState<SolutionPitch[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProposal, setSelectedProposal] = useState<ProjectBrief | null>(null);
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [selectedProjectForAssignment, setSelectedProjectForAssignment] = useState<ProjectBrief | null>(null);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+  const [assignmentNotes, setAssignmentNotes] = useState('');
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedPitchForFeedback, setSelectedPitchForFeedback] = useState<SolutionPitch | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     loadData();
+    loadTeamMembers();
   }, []);
 
   const loadData = async () => {
@@ -51,21 +74,151 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
     }
   };
 
+  const loadTeamMembers = () => {
+    // Mock team members data
+    setTeamMembers([
+      {
+        id: '1',
+        name: 'Sarah Johnson',
+        email: 'sarah@pitchforge.com',
+        expertise: ['React', 'Node.js', 'E-commerce'],
+        currentLoad: 2,
+        maxCapacity: 3,
+        availability: 'available'
+      },
+      {
+        id: '2',
+        name: 'Mike Chen',
+        email: 'mike@pitchforge.com',
+        expertise: ['Python', 'AI/ML', 'Healthcare'],
+        currentLoad: 1,
+        maxCapacity: 3,
+        availability: 'available'
+      },
+      {
+        id: '3',
+        name: 'Emily Rodriguez',
+        email: 'emily@pitchforge.com',
+        expertise: ['Vue.js', 'Mobile', 'UX/UI'],
+        currentLoad: 3,
+        maxCapacity: 3,
+        availability: 'busy'
+      },
+      {
+        id: '4',
+        name: 'David Kim',
+        email: 'david@pitchforge.com',
+        expertise: ['Java', 'DevOps', 'Cloud'],
+        currentLoad: 1,
+        maxCapacity: 4,
+        availability: 'available'
+      }
+    ]);
+  };
+
   const handleViewProposal = (proposal: ProjectBrief) => {
     setSelectedProposal(proposal);
     setShowProposalModal(true);
+  };
+
+  const handleAssignProject = (project: ProjectBrief) => {
+    setSelectedProjectForAssignment(project);
+    setShowAssignmentModal(true);
+  };
+
+  const handleAssignmentSubmit = async () => {
+    if (!selectedProjectForAssignment || !selectedAssignee) return;
+
+    try {
+      const member = teamMembers.find(m => m.id === selectedAssignee);
+      if (!member) return;
+
+      await updateProjectBrief(selectedProjectForAssignment.id, {
+        assignedTo: member.email,
+        status: 'in_progress'
+      });
+
+      setProjects(prev => prev.map(p => 
+        p.id === selectedProjectForAssignment.id 
+          ? { ...p, assignedTo: member.email, status: 'in_progress' }
+          : p
+      ));
+
+      // Update team member load
+      setTeamMembers(prev => prev.map(m => 
+        m.id === selectedAssignee 
+          ? { ...m, currentLoad: m.currentLoad + 1 }
+          : m
+      ));
+
+      toast({
+        title: "Assignment successful",
+        description: `Project "${selectedProjectForAssignment.title}" assigned to ${member.name}`,
+      });
+
+      setShowAssignmentModal(false);
+      setSelectedProjectForAssignment(null);
+      setSelectedAssignee('');
+      setAssignmentNotes('');
+    } catch (error) {
+      toast({
+        title: "Assignment failed",
+        description: "Failed to assign the project. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProvideFeedback = (pitch: SolutionPitch) => {
+    setSelectedPitchForFeedback(pitch);
+    setShowFeedbackModal(true);
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!selectedPitchForFeedback || !feedbackText.trim()) return;
+
+    try {
+      // Update pitch with feedback
+      const updatedPitch = { ...selectedPitchForFeedback, feedback: feedbackText };
+      setPitches(prev => prev.map(p => 
+        p.id === selectedPitchForFeedback.id ? updatedPitch : p
+      ));
+
+      toast({
+        title: "Feedback submitted",
+        description: "Feedback has been sent to the team member",
+      });
+
+      setShowFeedbackModal(false);
+      setSelectedPitchForFeedback(null);
+      setFeedbackText('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleApproveProposal = (proposalId: string) => {
     setProjects(prev => 
       prev.map(p => p.id === proposalId ? { ...p, status: 'approved' as const } : p)
     );
+    toast({
+      title: "Proposal approved",
+      description: "The proposal has been approved",
+    });
   };
 
   const handleRejectProposal = (proposalId: string) => {
     setProjects(prev => 
       prev.map(p => p.id === proposalId ? { ...p, status: 'submitted' as const } : p)
     );
+    toast({
+      title: "Proposal rejected",
+      description: "The proposal has been rejected",
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -93,6 +246,15 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
     if (score >= 80) return 'bg-info/10 text-info border-info/20';
     if (score >= 70) return 'bg-warning/10 text-warning border-warning/20';
     return 'bg-muted/10 text-muted-foreground border-muted/20';
+  };
+
+  const getAvailabilityColor = (availability: string) => {
+    switch (availability) {
+      case 'available': return 'text-green-600';
+      case 'busy': return 'text-yellow-600';
+      case 'unavailable': return 'text-red-600';
+      default: return 'text-muted-foreground';
+    }
   };
 
   const stats = {
@@ -213,9 +375,25 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
                         <p className="text-sm text-muted-foreground mt-1">{project.objectives}</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          {project.assignedTo ? 'Reassign' : 'Assign'}
-                        </Button>
+                        {!project.assignedTo ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleAssignProject(project)}
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            Assign
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleAssignProject(project)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Reassign
+                          </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -275,6 +453,135 @@ export const TeamManagerDashboard = ({ user }: TeamManagerDashboardProps) => {
         onReject={handleRejectProposal}
         showActions={true}
       />
+
+      {/* Assignment Modal */}
+      <Dialog open={showAssignmentModal} onOpenChange={setShowAssignmentModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Project</DialogTitle>
+            <DialogDescription>
+              Assign "{selectedProjectForAssignment?.title}" to a team member
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Team Member</Label>
+              <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers
+                    .filter(member => member.currentLoad < member.maxCapacity)
+                    .map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        <div className="flex items-center justify-between">
+                          <span>{member.name}</span>
+                          <span className={`text-xs ${getAvailabilityColor(member.availability)}`}>
+                            {member.currentLoad}/{member.maxCapacity}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedAssignee && (
+              <div className="p-3 bg-muted rounded-lg">
+                {(() => {
+                  const member = teamMembers.find(m => m.id === selectedAssignee);
+                  return member ? (
+                    <div>
+                      <p className="text-sm font-medium">{member.name}</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {member.email}
+                      </p>
+                      <div className="flex gap-1">
+                        {member.expertise.slice(0, 3).map((skill) => (
+                          <Badge key={skill} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Assignment Notes (Optional)</Label>
+              <Textarea
+                placeholder="Add any specific instructions or notes for this assignment..."
+                value={assignmentNotes}
+                onChange={(e) => setAssignmentNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAssignmentModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAssignmentSubmit}
+                disabled={!selectedAssignee}
+                className="flex-1"
+              >
+                Assign Project
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feedback Modal */}
+      <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Provide Feedback</DialogTitle>
+            <DialogDescription>
+              Give feedback on "{selectedPitchForFeedback?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Feedback</Label>
+              <Textarea
+                placeholder="Provide constructive feedback for the team member..."
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFeedbackModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackText.trim()}
+                className="flex-1"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send Feedback
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

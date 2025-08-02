@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectBrief, fetchProjectBriefs, submitProjectBrief } from '@/lib/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ProjectBrief, fetchProjectBriefs, submitProjectBrief, deleteProjectBrief } from '@/lib/mockData';
 import { User } from '@/lib/auth';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Eye, Upload } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Eye, Upload, Trash2, Edit, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FinalizedPitchViewer } from '@/components/customer/FinalizedPitchViewer';
 import { BriefWorkflow } from '@/components/brief/BriefWorkflow';
@@ -24,6 +25,10 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
   const [showForm, setShowForm] = useState(false);
   const [showUploadWorkflow, setShowUploadWorkflow] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectBrief | null>(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectBrief | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -118,6 +123,96 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleViewProject = (project: ProjectBrief) => {
+    setSelectedProject(project);
+    setShowProjectModal(true);
+  };
+
+  const handleEditProject = (project: ProjectBrief) => {
+    setEditingProject(project);
+    setFormData({
+      title: project.title,
+      industry: project.industry,
+      budget: project.budget,
+      objectives: project.objectives,
+      timeline: project.timeline,
+      clientDetails: project.clientDetails
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+
+    setIsSubmitting(true);
+    try {
+      // This would call an update API in a real implementation
+      const updatedProject = { ...editingProject, ...formData };
+      setProjects(prev => prev.map(p => p.id === editingProject.id ? updatedProject : p));
+      setShowEditModal(false);
+      setEditingProject(null);
+      toast({
+        title: "Success",
+        description: "Project brief updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update project brief",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await deleteProjectBrief(projectId);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      toast({
+        title: "Success",
+        description: "Project brief deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete project brief",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadProject = (project: ProjectBrief) => {
+    const projectData = {
+      title: project.title,
+      industry: project.industry,
+      budget: project.budget,
+      objectives: project.objectives,
+      timeline: project.timeline,
+      clientDetails: project.clientDetails,
+      status: project.status,
+      submittedBy: project.submittedBy,
+      createdAt: project.createdAt
+    };
+
+    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.title.replace(/\s+/g, '_')}_brief.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded",
+      description: "Project brief downloaded successfully",
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -314,10 +409,42 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
                           <p className="text-sm text-muted-foreground mt-1">{project.industry} • {project.budget}</p>
                           <p className="text-sm text-muted-foreground mt-2">{project.objectives}</p>
                         </div>
-                        <Badge className={`gap-1 ${getStatusColor(project.status)}`}>
-                          {getStatusIcon(project.status)}
-                          {project.status.replace('_', ' ')}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={`gap-1 ${getStatusColor(project.status)}`}>
+                            {getStatusIcon(project.status)}
+                            {project.status.replace('_', ' ')}
+                          </Badge>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewProject(project)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditProject(project)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadProject(project)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteProject(project.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                         <span>Submitted: {project.createdAt}</span>
@@ -336,6 +463,156 @@ export const CustomerDashboard = ({ user }: CustomerDashboardProps) => {
           <FinalizedPitchViewer user={user} />
         </TabsContent>
       </Tabs>
+
+      {/* Project Detail Modal */}
+      <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title}</DialogTitle>
+            <DialogDescription>
+              Detailed view of your project brief
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProject && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Industry</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.industry}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Budget</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.budget}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Timeline</Label>
+                  <p className="text-sm text-muted-foreground">{selectedProject.timeline}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <Badge className={getStatusColor(selectedProject.status)}>
+                    {selectedProject.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Objectives</Label>
+                <p className="text-sm text-muted-foreground mt-1">{selectedProject.objectives}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Client Details</Label>
+                <p className="text-sm text-muted-foreground mt-1">{selectedProject.clientDetails}</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>Submitted: {selectedProject.createdAt}</span>
+                {selectedProject.assignedTo && <span>Assigned to: {selectedProject.assignedTo}</span>}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Project Brief</DialogTitle>
+            <DialogDescription>
+              Update your project brief details
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateProject} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Project Title</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-industry">Industry</Label>
+                <Select value={formData.industry} onValueChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="healthcare">Healthcare</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-budget">Budget Range</Label>
+                <Select value={formData.budget} onValueChange={(value) => setFormData(prev => ({ ...prev, budget: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="under-25k">Under $25,000</SelectItem>
+                    <SelectItem value="25k-50k">$25,000 - $50,000</SelectItem>
+                    <SelectItem value="50k-100k">$50,000 - $100,000</SelectItem>
+                    <SelectItem value="100k-250k">$100,000 - $250,000</SelectItem>
+                    <SelectItem value="250k-plus">$250,000+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-timeline">Timeline</Label>
+                <Select value={formData.timeline} onValueChange={(value) => setFormData(prev => ({ ...prev, timeline: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2-4 weeks">2-4 weeks</SelectItem>
+                    <SelectItem value="1-2 months">1-2 months</SelectItem>
+                    <SelectItem value="3-4 months">3-4 months</SelectItem>
+                    <SelectItem value="6+ months">6+ months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-objectives">Project Objectives</Label>
+              <Textarea
+                id="edit-objectives"
+                value={formData.objectives}
+                onChange={(e) => setFormData(prev => ({ ...prev, objectives: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-clientDetails">Client Details</Label>
+              <Textarea
+                id="edit-clientDetails"
+                value={formData.clientDetails}
+                onChange={(e) => setFormData(prev => ({ ...prev, clientDetails: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Updating...' : 'Update Brief'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

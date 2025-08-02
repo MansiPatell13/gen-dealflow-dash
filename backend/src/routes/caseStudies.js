@@ -1,10 +1,48 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { CaseStudy, mockCaseStudies } from '../models/CaseStudy.js';
-import { ProjectBrief, mockProjectBriefs } from '../models/ProjectBrief.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Mock data for case studies
+let mockCaseStudies = [
+  {
+    id: '1',
+    title: 'Retail Giant E-commerce Transformation',
+    industry: 'Retail',
+    description: 'Complete overhaul of legacy e-commerce platform resulting in 300% increase in online sales',
+    relevanceScore: 95,
+    tags: ['e-commerce', 'mobile', 'performance'],
+    outcome: '300% increase in online sales, 50% reduction in cart abandonment',
+    budget: '$50,000 - $100,000',
+    timeline: '3-4 months',
+    createdAt: '2024-01-15'
+  },
+  {
+    id: '2',
+    title: 'SaaS CRM Integration Success',
+    industry: 'Technology',
+    description: 'Seamless integration of multiple CRM systems for a growing SaaS company',
+    relevanceScore: 88,
+    tags: ['CRM', 'integration', 'automation'],
+    outcome: '40% improvement in lead conversion, 60% reduction in manual tasks',
+    budget: '$25,000 - $50,000',
+    timeline: '6-8 weeks',
+    createdAt: '2024-02-20'
+  },
+  {
+    id: '3',
+    title: 'Healthcare Mobile Solution',
+    industry: 'Healthcare',
+    description: 'HIPAA-compliant mobile app for patient management and telemedicine',
+    relevanceScore: 92,
+    tags: ['mobile', 'healthcare', 'compliance'],
+    outcome: '85% patient satisfaction increase, 30% reduction in appointment no-shows',
+    budget: '$75,000 - $150,000',
+    timeline: '4-6 months',
+    createdAt: '2024-03-10'
+  }
+];
 
 // Get all case studies
 router.get('/', authenticateToken, (req, res) => {
@@ -17,48 +55,6 @@ router.get('/', authenticateToken, (req, res) => {
 
   } catch (error) {
     console.error('Get case studies error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// Get case studies with similarity scores for a specific brief
-router.get('/recommendations/:briefId', authenticateToken, (req, res) => {
-  try {
-    const { briefId } = req.params;
-    
-    const brief = mockProjectBriefs.find(b => b.id === briefId);
-    if (!brief) {
-      return res.status(404).json({ 
-        error: 'Project brief not found' 
-      });
-    }
-
-    // Calculate similarity scores for all case studies
-    const caseStudiesWithScores = mockCaseStudies.map(study => {
-      const caseStudy = new CaseStudy(study);
-      const relevanceScore = caseStudy.calculateSimilarityScore(brief);
-      
-      return {
-        ...study,
-        relevanceScore
-      };
-    });
-
-    // Sort by relevance score and return top 3
-    const recommendations = caseStudiesWithScores
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 3);
-
-    res.json({
-      success: true,
-      data: recommendations,
-      brief: brief
-    });
-
-  } catch (error) {
-    console.error('Get recommendations error:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });
@@ -91,15 +87,16 @@ router.get('/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Create new case study (team managers only)
+// Create new case study
 router.post('/', [
   authenticateToken,
-  requireRole(['team_manager']),
   body('title').trim().isLength({ min: 5 }).withMessage('Title must be at least 5 characters'),
-  body('industry').isIn(CaseStudy.getIndustries()).withMessage('Valid industry is required'),
+  body('industry').trim().notEmpty().withMessage('Industry is required'),
   body('description').trim().isLength({ min: 20 }).withMessage('Description must be at least 20 characters'),
   body('outcome').trim().isLength({ min: 10 }).withMessage('Outcome must be at least 10 characters'),
-  body('tags').isArray().withMessage('Tags must be an array')
+  body('tags').isArray({ min: 1 }).withMessage('At least one tag is required'),
+  body('budget').optional().trim().notEmpty().withMessage('Budget is required if provided'),
+  body('timeline').optional().trim().notEmpty().withMessage('Timeline is required if provided')
 ], (req, res) => {
   try {
     // Check for validation errors
@@ -111,28 +108,29 @@ router.post('/', [
       });
     }
 
-    const { title, industry, description, outcome, tags } = req.body;
+    const { title, industry, description, outcome, tags, budget, timeline } = req.body;
 
     // Create new case study
-    const newCaseStudy = new CaseStudy({
+    const newCaseStudy = {
       id: Date.now().toString(),
       title,
       industry,
       description,
       outcome,
-      tags: tags || [],
-      relevanceScore: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+      tags,
+      budget,
+      timeline,
+      relevanceScore: 0, // Will be calculated when used
+      createdAt: new Date().toISOString().split('T')[0]
+    };
 
-    // Add to mock data (in real app, save to database)
+    // Add to mock data
     mockCaseStudies.push(newCaseStudy);
 
     res.status(201).json({
       success: true,
       message: 'Case study created successfully',
-      data: newCaseStudy.toJSON()
+      data: newCaseStudy
     });
 
   } catch (error) {
@@ -143,15 +141,16 @@ router.post('/', [
   }
 });
 
-// Update case study (team managers only)
+// Update case study
 router.put('/:id', [
   authenticateToken,
-  requireRole(['team_manager']),
   body('title').optional().trim().isLength({ min: 5 }).withMessage('Title must be at least 5 characters'),
-  body('industry').optional().isIn(CaseStudy.getIndustries()).withMessage('Valid industry is required'),
+  body('industry').optional().trim().notEmpty().withMessage('Industry is required'),
   body('description').optional().trim().isLength({ min: 20 }).withMessage('Description must be at least 20 characters'),
   body('outcome').optional().trim().isLength({ min: 10 }).withMessage('Outcome must be at least 10 characters'),
-  body('tags').optional().isArray().withMessage('Tags must be an array')
+  body('tags').optional().isArray({ min: 1 }).withMessage('At least one tag is required'),
+  body('budget').optional().trim().notEmpty().withMessage('Budget is required if provided'),
+  body('timeline').optional().trim().notEmpty().withMessage('Timeline is required if provided')
 ], (req, res) => {
   try {
     // Check for validation errors
@@ -177,8 +176,7 @@ router.put('/:id', [
     // Update case study
     const updatedCaseStudy = {
       ...mockCaseStudies[caseStudyIndex],
-      ...updateData,
-      updatedAt: new Date()
+      ...updateData
     };
 
     mockCaseStudies[caseStudyIndex] = updatedCaseStudy;
@@ -197,11 +195,8 @@ router.put('/:id', [
   }
 });
 
-// Delete case study (team managers only)
-router.delete('/:id', [
-  authenticateToken,
-  requireRole(['team_manager'])
-], (req, res) => {
+// Delete case study
+router.delete('/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
 
@@ -229,31 +224,93 @@ router.delete('/:id', [
   }
 });
 
-// Get case study statistics
-router.get('/stats/overview', authenticateToken, (req, res) => {
+// Get case study recommendations for a brief
+router.get('/recommendations/:briefId', authenticateToken, (req, res) => {
   try {
-    const stats = {
-      total: mockCaseStudies.length,
-      byIndustry: {},
-      averageRelevanceScore: 0
+    const { briefId } = req.params;
+    
+    // Mock brief data - in real app, this would come from the database
+    const mockBrief = {
+      id: briefId,
+      title: 'Sample Project',
+      industry: 'Technology',
+      budget: '$50,000 - $100,000',
+      timeline: '3-4 months',
+      objectives: 'Build a modern web application'
     };
 
-    // Calculate industry distribution
-    mockCaseStudies.forEach(study => {
-      stats.byIndustry[study.industry] = (stats.byIndustry[study.industry] || 0) + 1;
+    // Calculate similarity scores for all case studies
+    const scoredCaseStudies = mockCaseStudies.map(caseStudy => {
+      let score = 0;
+      let totalWeight = 0;
+
+      // Industry match (weight: 30%)
+      const industryWeight = 0.3;
+      if (mockBrief.industry.toLowerCase() === caseStudy.industry.toLowerCase()) {
+        score += industryWeight;
+      }
+      totalWeight += industryWeight;
+
+      // Budget compatibility (weight: 25%)
+      const budgetWeight = 0.25;
+      if (mockBrief.budget && caseStudy.budget) {
+        // Simple budget comparison
+        const briefBudget = mockBrief.budget;
+        const caseBudget = caseStudy.budget;
+        if (briefBudget === caseBudget) {
+          score += budgetWeight;
+        }
+      }
+      totalWeight += budgetWeight;
+
+      // Timeline compatibility (weight: 20%)
+      const timelineWeight = 0.2;
+      if (mockBrief.timeline && caseStudy.timeline) {
+        const briefTimeline = mockBrief.timeline;
+        const caseTimeline = caseStudy.timeline;
+        if (briefTimeline === caseTimeline) {
+          score += timelineWeight;
+        }
+      }
+      totalWeight += timelineWeight;
+
+      // Content similarity (weight: 25%)
+      const contentWeight = 0.25;
+      const briefWords = mockBrief.objectives.toLowerCase().split(/\s+/);
+      const caseWords = caseStudy.description.toLowerCase().split(/\s+/);
+      const tagWords = caseStudy.tags.map(tag => tag.toLowerCase());
+
+      let matches = 0;
+      let totalWords = briefWords.length;
+
+      briefWords.forEach(word => {
+        if (caseWords.includes(word) || tagWords.includes(word)) {
+          matches++;
+        }
+      });
+
+      const contentScore = matches / totalWords;
+      score += contentScore * contentWeight;
+      totalWeight += contentWeight;
+
+      return {
+        ...caseStudy,
+        relevanceScore: Math.round((score / totalWeight) * 100)
+      };
     });
 
-    // Calculate average relevance score
-    const totalScore = mockCaseStudies.reduce((sum, study) => sum + (study.relevanceScore || 0), 0);
-    stats.averageRelevanceScore = mockCaseStudies.length > 0 ? Math.round(totalScore / mockCaseStudies.length) : 0;
+    // Sort by relevance score and return top recommendations
+    const recommendations = scoredCaseStudies
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 5);
 
     res.json({
       success: true,
-      data: stats
+      data: recommendations
     });
 
   } catch (error) {
-    console.error('Get case study stats error:', error);
+    console.error('Get recommendations error:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });

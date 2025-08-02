@@ -1,3 +1,5 @@
+import apiService from './api';
+
 export type UserRole = 'customer' | 'team_manager' | 'team_member';
 
 export interface User {
@@ -12,7 +14,7 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-// Mock user data
+// Mock user data for fallback
 const mockUsers: Record<string, { password: string; user: User }> = {
   'customer@pitchforge.com': {
     password: 'password',
@@ -44,41 +46,76 @@ const mockUsers: Record<string, { password: string; user: User }> = {
 };
 
 export const signIn = async (email: string, password: string): Promise<User> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const userData = mockUsers[email];
-  if (!userData || userData.password !== password) {
-    throw new Error('Invalid credentials');
+  try {
+    // Try backend API first
+    const response = await apiService.signIn(email, password);
+    const { user, token } = response;
+    
+    // Store token and user data
+    localStorage.setItem('pitchforge_token', token);
+    localStorage.setItem('pitchforge_user', JSON.stringify(user));
+    
+    return user;
+  } catch (error) {
+    // Fallback to mock data for development
+    console.warn('Backend API unavailable, using mock data:', error);
+    
+    const userData = mockUsers[email];
+    if (!userData || userData.password !== password) {
+      throw new Error('Invalid credentials');
+    }
+    
+    // Store user data for mock authentication
+    localStorage.setItem('pitchforge_user', JSON.stringify(userData.user));
+    
+    return userData.user;
   }
-  
-  return userData.user;
 };
 
 export const signUp = async (name: string, email: string, password: string, role: UserRole): Promise<User> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  if (mockUsers[email]) {
-    throw new Error('User already exists');
+  try {
+    // Try backend API first
+    const response = await apiService.signUp(name, email, password, role);
+    const { user, token } = response;
+    
+    // Store token and user data
+    localStorage.setItem('pitchforge_token', token);
+    localStorage.setItem('pitchforge_user', JSON.stringify(user));
+    
+    return user;
+  } catch (error) {
+    // Fallback to mock data for development
+    console.warn('Backend API unavailable, using mock data:', error);
+    
+    if (mockUsers[email]) {
+      throw new Error('User already exists');
+    }
+    
+    const newUser: User = {
+      id: Date.now().toString(),
+      name,
+      email,
+      role
+    };
+    
+    mockUsers[email] = { password, user: newUser };
+    localStorage.setItem('pitchforge_user', JSON.stringify(newUser));
+    
+    return newUser;
   }
-  
-  const newUser: User = {
-    id: Date.now().toString(),
-    name,
-    email,
-    role
-  };
-  
-  mockUsers[email] = { password, user: newUser };
-  return newUser;
 };
 
 export const signOut = async (): Promise<void> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  // Clear stored user data
-  localStorage.removeItem('pitchforge_user');
+  try {
+    // Try backend API first
+    await apiService.signOut();
+  } catch (error) {
+    console.warn('Backend API unavailable for signout:', error);
+  } finally {
+    // Clear stored data
+    localStorage.removeItem('pitchforge_token');
+    localStorage.removeItem('pitchforge_user');
+  }
 };
 
 // Persistent authentication functions
@@ -97,4 +134,14 @@ export const storeUser = (user: User): void => {
 
 export const clearStoredUser = (): void => {
   localStorage.removeItem('pitchforge_user');
+};
+
+export const getStoredToken = (): string | null => {
+  return localStorage.getItem('pitchforge_token');
+};
+
+export const isAuthenticated = (): boolean => {
+  const token = getStoredToken();
+  const user = getStoredUser();
+  return !!(token && user);
 };

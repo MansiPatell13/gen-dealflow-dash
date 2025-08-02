@@ -1,3 +1,5 @@
+import apiService from './api';
+
 export interface ProjectBrief {
   id: string;
   title: string;
@@ -147,44 +149,173 @@ export const mockSolutionPitches: SolutionPitch[] = [
   }
 ];
 
-// Mock API functions
+// API functions with fallback to mock data
 export const fetchProjectBriefs = async (userRole?: string, userId?: string): Promise<ProjectBrief[]> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  if (userRole === 'customer') {
-    return mockProjectBriefs.filter(brief => brief.submittedBy === userId);
+  try {
+    const response = await apiService.getProjectBriefs();
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    if (userRole === 'customer') {
+      return mockProjectBriefs.filter(brief => brief.submittedBy === userId);
+    }
+    
+    return mockProjectBriefs;
   }
-  
-  return mockProjectBriefs;
 };
 
 export const fetchCaseStudies = async (): Promise<CaseStudy[]> => {
-  await new Promise(resolve => setTimeout(resolve, 600));
-  return mockCaseStudies;
+  try {
+    const response = await apiService.getCaseStudies();
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    return mockCaseStudies;
+  }
 };
 
 export const fetchSolutionPitches = async (briefId?: string): Promise<SolutionPitch[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  if (briefId) {
-    return mockSolutionPitches.filter(pitch => pitch.briefId === briefId);
+  try {
+    const response = await apiService.getSolutionPitches();
+    const pitches = response.data;
+    
+    if (briefId) {
+      return pitches.filter(pitch => pitch.briefId === briefId);
+    }
+    
+    return pitches;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    if (briefId) {
+      return mockSolutionPitches.filter(pitch => pitch.briefId === briefId);
+    }
+    
+    return mockSolutionPitches;
   }
-  
-  return mockSolutionPitches;
 };
 
 export const submitProjectBrief = async (brief: Omit<ProjectBrief, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProjectBrief> => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const newBrief: ProjectBrief = {
-    ...brief,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString().split('T')[0],
-    updatedAt: new Date().toISOString().split('T')[0]
-  };
-  
-  mockProjectBriefs.push(newBrief);
-  return newBrief;
+  try {
+    const response = await apiService.createProjectBrief(brief);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const newBrief: ProjectBrief = {
+      ...brief,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+    
+    mockProjectBriefs.push(newBrief);
+    return newBrief;
+  }
+};
+
+export const updateProjectBrief = async (id: string, briefData: Partial<ProjectBrief>): Promise<ProjectBrief> => {
+  try {
+    const response = await apiService.updateProjectBrief(id, briefData);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const briefIndex = mockProjectBriefs.findIndex(b => b.id === id);
+    if (briefIndex === -1) {
+      throw new Error('Project brief not found');
+    }
+    
+    const updatedBrief = {
+      ...mockProjectBriefs[briefIndex],
+      ...briefData,
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+    
+    mockProjectBriefs[briefIndex] = updatedBrief;
+    return updatedBrief;
+  }
+};
+
+export const deleteProjectBrief = async (id: string): Promise<void> => {
+  try {
+    await apiService.deleteProjectBrief(id);
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const briefIndex = mockProjectBriefs.findIndex(b => b.id === id);
+    if (briefIndex !== -1) {
+      mockProjectBriefs.splice(briefIndex, 1);
+    }
+  }
+};
+
+export const createSolutionPitch = async (pitchData: Omit<SolutionPitch, 'id' | 'createdAt'>): Promise<SolutionPitch> => {
+  try {
+    const response = await apiService.createSolutionPitch(pitchData);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const newPitch: SolutionPitch = {
+      ...pitchData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    mockSolutionPitches.push(newPitch);
+    return newPitch;
+  }
+};
+
+export const updateSolutionPitch = async (id: string, pitchData: Partial<SolutionPitch>): Promise<SolutionPitch> => {
+  try {
+    const response = await apiService.updateSolutionPitch(id, pitchData);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const pitchIndex = mockSolutionPitches.findIndex(p => p.id === id);
+    if (pitchIndex === -1) {
+      throw new Error('Solution pitch not found');
+    }
+    
+    const updatedPitch = {
+      ...mockSolutionPitches[pitchIndex],
+      ...pitchData
+    };
+    
+    mockSolutionPitches[pitchIndex] = updatedPitch;
+    return updatedPitch;
+  }
+};
+
+export const createCaseStudy = async (caseStudyData: Omit<CaseStudy, 'id' | 'createdAt'>): Promise<CaseStudy> => {
+  try {
+    const response = await apiService.createCaseStudy(caseStudyData);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const newCaseStudy: CaseStudy = {
+      ...caseStudyData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    
+    mockCaseStudies.push(newCaseStudy);
+    return newCaseStudy;
+  }
 };
 
 // Similarity scoring algorithm for case study recommendations
@@ -272,19 +403,25 @@ const calculateContentSimilarity = (briefObjectives: string, caseDescription: st
 };
 
 export const getRecommendedCaseStudies = async (brief: ProjectBrief, limit: number = 3): Promise<CaseStudy[]> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    const response = await apiService.getCaseStudyRecommendations(brief.id);
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Calculate similarity scores for all case studies
-  const scoredCaseStudies = mockCaseStudies.map(caseStudy => ({
-    ...caseStudy,
-    relevanceScore: calculateSimilarityScore(brief, caseStudy)
-  }));
+    // Calculate similarity scores for all case studies
+    const scoredCaseStudies = mockCaseStudies.map(caseStudy => ({
+      ...caseStudy,
+      relevanceScore: calculateSimilarityScore(brief, caseStudy)
+    }));
 
-  // Sort by relevance score and return top recommendations
-  return scoredCaseStudies
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, limit);
+    // Sort by relevance score and return top recommendations
+    return scoredCaseStudies
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+  }
 };
 
 // Solution Pitch Generation
@@ -292,28 +429,34 @@ export const generateSolutionPitch = async (
   brief: ProjectBrief, 
   caseStudies: CaseStudy[]
 ): Promise<SolutionPitch> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  try {
+    const response = await apiService.generateSolutionPitch(brief.id, caseStudies.map(cs => cs.id));
+    return response.data;
+  } catch (error) {
+    console.warn('Backend API unavailable, using mock data:', error);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-  const relevantCaseStudies = caseStudies
-    .filter(cs => cs.relevanceScore >= 60)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, 2);
+    const relevantCaseStudies = caseStudies
+      .filter(cs => cs.relevanceScore >= 60)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 2);
 
-  const pitchTitle = generatePitchTitle(brief);
-  const pitchContent = generatePitchContent(brief, relevantCaseStudies);
+    const pitchTitle = generatePitchTitle(brief);
+    const pitchContent = generatePitchContent(brief, relevantCaseStudies);
 
-  return {
-    id: Date.now().toString(),
-    title: pitchTitle,
-    content: pitchContent,
-    status: 'draft',
-    createdBy: 'member@pitchforge.com',
-    createdAt: new Date().toISOString(),
-    briefId: brief.id || 'temp-brief-id',
-    caseStudyIds: relevantCaseStudies.map(cs => cs.id),
-    version: 1
-  };
+    return {
+      id: Date.now().toString(),
+      title: pitchTitle,
+      content: pitchContent,
+      status: 'draft',
+      createdBy: 'member@pitchforge.com',
+      createdAt: new Date().toISOString(),
+      briefId: brief.id || 'temp-brief-id',
+      caseStudyIds: relevantCaseStudies.map(cs => cs.id),
+      version: 1
+    };
+  }
 };
 
 const generatePitchTitle = (brief: ProjectBrief): string => {

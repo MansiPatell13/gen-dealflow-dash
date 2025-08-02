@@ -1,11 +1,33 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { SolutionPitch, mockSolutionPitches } from '../models/SolutionPitch.js';
-import { ProjectBrief, mockProjectBriefs } from '../models/ProjectBrief.js';
-import { CaseStudy, mockCaseStudies } from '../models/CaseStudy.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Mock data for solution pitches
+let mockSolutionPitches = [
+  {
+    id: '1',
+    briefId: '1',
+    title: 'Modern E-commerce Platform Proposal',
+    content: 'We propose building a scalable e-commerce platform using React, Node.js, and cloud infrastructure...',
+    status: 'submitted',
+    createdBy: 'member@pitchforge.com',
+    createdAt: '2024-01-21',
+    clientEmail: 'customer@pitchforge.com'
+  },
+  {
+    id: '2',
+    briefId: '3',
+    title: 'Healthcare Mobile App Solution',
+    content: 'Our healthcare mobile application will provide secure patient management with HIPAA compliance...',
+    status: 'approved',
+    createdBy: 'member@pitchforge.com',
+    createdAt: '2024-01-18',
+    feedback: 'Excellent proposal. Approved for implementation.',
+    clientEmail: 'customer@pitchforge.com'
+  }
+];
 
 // Get all solution pitches (filtered by user role)
 router.get('/', authenticateToken, (req, res) => {
@@ -14,10 +36,10 @@ router.get('/', authenticateToken, (req, res) => {
     let pitches = [...mockSolutionPitches];
 
     // Filter based on user role
-    if (role === 'customer') {
-      pitches = pitches.filter(pitch => pitch.clientEmail === email);
-    } else if (role === 'team_member') {
+    if (role === 'team_member') {
       pitches = pitches.filter(pitch => pitch.createdBy === email);
+    } else if (role === 'customer') {
+      pitches = pitches.filter(pitch => pitch.clientEmail === email);
     }
     // Team managers can see all pitches
 
@@ -50,13 +72,13 @@ router.get('/:id', authenticateToken, (req, res) => {
     }
 
     // Check permissions
-    if (role === 'customer' && pitch.clientEmail !== email) {
+    if (role === 'team_member' && pitch.createdBy !== email) {
       return res.status(403).json({ 
         error: 'Access denied' 
       });
     }
 
-    if (role === 'team_member' && pitch.createdBy !== email) {
+    if (role === 'customer' && pitch.clientEmail !== email) {
       return res.status(403).json({ 
         error: 'Access denied' 
       });
@@ -75,79 +97,14 @@ router.get('/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Generate solution pitch from brief and case studies
-router.post('/generate/:briefId', [
-  authenticateToken,
-  requireRole(['team_member', 'team_manager'])
-], (req, res) => {
-  try {
-    const { briefId } = req.params;
-    const { email } = req.user;
-
-    const brief = mockProjectBriefs.find(b => b.id === briefId);
-    if (!brief) {
-      return res.status(404).json({ 
-        error: 'Project brief not found' 
-      });
-    }
-
-    // Get recommended case studies
-    const caseStudiesWithScores = mockCaseStudies.map(study => {
-      const caseStudy = new CaseStudy(study);
-      const relevanceScore = caseStudy.calculateSimilarityScore(brief);
-      
-      return {
-        ...study,
-        relevanceScore
-      };
-    });
-
-    const recommendedCaseStudies = caseStudiesWithScores
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 3);
-
-    // Generate pitch content
-    const content = SolutionPitch.generatePitchContent(brief, recommendedCaseStudies);
-
-    // Create new pitch
-    const newPitch = new SolutionPitch({
-      id: Date.now().toString(),
-      briefId,
-      title: `Solution Proposal: ${brief.title}`,
-      content,
-      status: 'draft',
-      createdBy: email,
-      clientEmail: brief.submittedBy,
-      caseStudyIds: recommendedCaseStudies.map(cs => cs.id),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    // Add to mock data
-    mockSolutionPitches.push(newPitch);
-
-    res.status(201).json({
-      success: true,
-      message: 'Solution pitch generated successfully',
-      data: newPitch.toJSON(),
-      recommendedCaseStudies
-    });
-
-  } catch (error) {
-    console.error('Generate pitch error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
-    });
-  }
-});
-
 // Create new solution pitch
 router.post('/', [
   authenticateToken,
-  requireRole(['team_member', 'team_manager']),
   body('briefId').notEmpty().withMessage('Brief ID is required'),
   body('title').trim().isLength({ min: 5 }).withMessage('Title must be at least 5 characters'),
-  body('content').trim().isLength({ min: 50 }).withMessage('Content must be at least 50 characters')
+  body('content').trim().isLength({ min: 10 }).withMessage('Content must be at least 10 characters'),
+  body('status').isIn(['draft', 'submitted', 'approved', 'rejected']).withMessage('Valid status is required'),
+  body('clientEmail').isEmail().withMessage('Valid client email is required')
 ], (req, res) => {
   try {
     // Check for validation errors
@@ -159,30 +116,20 @@ router.post('/', [
       });
     }
 
-    const { briefId, title, content, caseStudyIds } = req.body;
+    const { briefId, title, content, status, clientEmail } = req.body;
     const { email } = req.user;
 
-    // Verify brief exists
-    const brief = mockProjectBriefs.find(b => b.id === briefId);
-    if (!brief) {
-      return res.status(404).json({ 
-        error: 'Project brief not found' 
-      });
-    }
-
     // Create new pitch
-    const newPitch = new SolutionPitch({
+    const newPitch = {
       id: Date.now().toString(),
       briefId,
       title,
       content,
-      status: 'draft',
+      status,
       createdBy: email,
-      clientEmail: brief.submittedBy,
-      caseStudyIds: caseStudyIds || [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+      clientEmail,
+      createdAt: new Date().toISOString()
+    };
 
     // Add to mock data
     mockSolutionPitches.push(newPitch);
@@ -190,7 +137,7 @@ router.post('/', [
     res.status(201).json({
       success: true,
       message: 'Solution pitch created successfully',
-      data: newPitch.toJSON()
+      data: newPitch
     });
 
   } catch (error) {
@@ -205,8 +152,8 @@ router.post('/', [
 router.put('/:id', [
   authenticateToken,
   body('title').optional().trim().isLength({ min: 5 }).withMessage('Title must be at least 5 characters'),
-  body('content').optional().trim().isLength({ min: 50 }).withMessage('Content must be at least 50 characters'),
-  body('status').optional().isIn(SolutionPitch.getStatuses()).withMessage('Valid status is required'),
+  body('content').optional().trim().isLength({ min: 10 }).withMessage('Content must be at least 10 characters'),
+  body('status').optional().isIn(['draft', 'submitted', 'approved', 'rejected']).withMessage('Valid status is required'),
   body('feedback').optional().trim().isLength({ min: 5 }).withMessage('Feedback must be at least 5 characters')
 ], (req, res) => {
   try {
@@ -240,25 +187,17 @@ router.put('/:id', [
       });
     }
 
-    // Only team managers can change status to approved/rejected
-    if (updateData.status && ['approved', 'rejected'].includes(updateData.status) && role !== 'team_manager') {
+    // Only team managers can provide feedback
+    if (updateData.feedback && role !== 'team_manager') {
       return res.status(403).json({ 
-        error: 'Only team managers can approve or reject pitches' 
-      });
-    }
-
-    // Validate status transition
-    if (updateData.status && !pitch.canTransitionTo(updateData.status)) {
-      return res.status(400).json({ 
-        error: 'Invalid status transition' 
+        error: 'Only team managers can provide feedback' 
       });
     }
 
     // Update pitch
     const updatedPitch = {
       ...pitch,
-      ...updateData,
-      updatedAt: new Date()
+      ...updateData
     };
 
     mockSolutionPitches[pitchIndex] = updatedPitch;
@@ -316,35 +255,56 @@ router.delete('/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Get pitch statistics
-router.get('/stats/overview', authenticateToken, (req, res) => {
+// Generate solution pitch (AI-powered)
+router.post('/generate', authenticateToken, (req, res) => {
   try {
-    const { role, email } = req.user;
-    let pitches = [...mockSolutionPitches];
+    const { briefId, caseStudyIds } = req.body;
+    const { email } = req.user;
 
-    // Filter based on user role
-    if (role === 'customer') {
-      pitches = pitches.filter(pitch => pitch.clientEmail === email);
-    } else if (role === 'team_member') {
-      pitches = pitches.filter(pitch => pitch.createdBy === email);
-    }
+    // Mock AI generation - in real app, this would call an AI service
+    const generatedPitch = {
+      id: Date.now().toString(),
+      briefId,
+      title: `AI-Generated Solution for Brief ${briefId}`,
+      content: `This is an AI-generated solution pitch based on the project brief and relevant case studies. The solution includes:
 
-    const stats = {
-      total: pitches.length,
-      draft: pitches.filter(p => p.status === 'draft').length,
-      submitted: pitches.filter(p => p.status === 'submitted').length,
-      approved: pitches.filter(p => p.status === 'approved').length,
-      rejected: pitches.filter(p => p.status === 'rejected').length,
-      finalized: pitches.filter(p => p.status === 'finalized').length
+1. Executive Summary
+- Comprehensive approach to the project requirements
+- Leveraging industry best practices and proven methodologies
+
+2. Technical Approach
+- Modern technology stack selection
+- Scalable architecture design
+- Security and performance considerations
+
+3. Implementation Plan
+- Phased delivery approach
+- Clear milestones and deliverables
+- Risk mitigation strategies
+
+4. Expected Outcomes
+- Measurable business impact
+- ROI projections
+- Long-term value creation
+
+This solution is tailored to meet the specific requirements outlined in the project brief while incorporating insights from successful similar projects.`,
+      status: 'draft',
+      createdBy: email,
+      createdAt: new Date().toISOString(),
+      caseStudyIds: caseStudyIds || []
     };
+
+    // Add to mock data
+    mockSolutionPitches.push(generatedPitch);
 
     res.json({
       success: true,
-      data: stats
+      message: 'Solution pitch generated successfully',
+      data: generatedPitch
     });
 
   } catch (error) {
-    console.error('Get pitch stats error:', error);
+    console.error('Generate pitch error:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });

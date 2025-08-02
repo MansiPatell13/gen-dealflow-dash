@@ -2,6 +2,9 @@
 
 A comprehensive web application for automating business proposal generation and management, built with React frontend and Node.js backend.
 
+## Deployed Site
+https://pitchforge.netlify.app/
+
 ## 🚀 Overview
 
 PitchForge is a modern SaaS platform designed to streamline the proposal generation process for businesses. It provides role-based dashboards, automated case study recommendations, and intelligent pitch generation to help teams create compelling proposals faster and more effectively.

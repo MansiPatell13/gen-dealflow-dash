@@ -211,58 +211,14 @@ pitchforge/
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
 
-4. **Start development server**
+3. **Start development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+4. **Open your browser**
    Navigate to `http://localhost:5173`
-
-### Backend Setup
-
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp env.example .env
-   # Edit .env with your settings
-   ```
-
-4. **Start backend server**
-   ```bash
-   npm run dev
-   ```
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Frontend Environment Variables
-VITE_API_URL=http://localhost:5000
-VITE_APP_ENV=development
-
-# Backend Environment Variables
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your-super-secret-jwt-key
-FRONTEND_URL=http://localhost:5173
-```
 
 ## 🎯 Key Features
 
